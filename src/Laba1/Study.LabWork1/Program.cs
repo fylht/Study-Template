@@ -35,5 +35,6 @@ public static class Program
             default:
                 throw new NotSupportedException();
         }
+
     }
 }
