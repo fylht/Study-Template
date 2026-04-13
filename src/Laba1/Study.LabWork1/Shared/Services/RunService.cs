@@ -1,3 +1,4 @@
+using Study.LabWork1.Features.Task1.Services;
 using Study.LabWork1.Shared.Abstractions;
 
 namespace Study.LabWork1.Shared.Services;
@@ -10,7 +11,16 @@ public class RunService : IRunService
     /// <summary>
     /// Задание 1
     /// </summary>
-    public void RunTask1() => throw new NotImplementedException();
+    public void RunTask1()
+    {
+        var color = new HSLModel(120, 50, 50);
+        Console.WriteLine(color.ToString());
+        Console.WriteLine(color.ToRGB());
+        Console.WriteLine(color.ToHEX());
+
+        // Test
+
+    }
 
     /// <summary>
     /// Задание 2
