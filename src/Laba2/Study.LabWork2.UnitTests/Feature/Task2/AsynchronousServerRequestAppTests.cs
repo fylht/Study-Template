@@ -1,29 +1,60 @@
+using System.Text.Json;
+using NUnit.Framework;
+using Study.LabWork2.Abstractions.Feature.Task2.DtoModels;
+using Study.LabWork2.Feature.Task2;
+
 namespace Study.LabWork2.UnitTests.Feature.Task2;
 
-[TestFixture]
-public sealed class AsynchronousServerRequestAppTests
-{
-    // TODO: В тестах не используем прямое обращение к стороннему серверу.
-    // Вместо этого используем:
-    // 
-    // 1. МОК-ОБЪЕКТЫ (Mock) - для unit-тестирования:
-    //    - Moq Framework: var mockHttpClient = new Mock<HttpClient>();
-    //    - NSubstitute: var substitute = Substitute.For<IHttpClient>();
-    //    - FakeItEasy: A.Fake<IHttpClient>();
-    // 
-    // 2. ТЕСТОВЫЙ HTTP-КЛИЕНТ (TestHttpClient):
-    //    - TestServer из Microsoft.AspNetCore.TestHost
-    //    - WebApplicationFactory для интеграционных тестов
-    //    - HttpMessageHandler с предопределенными ответами
-    // 
-    // 3. ЛОКАЛЬНЫЙ ТЕСТОВЫЙ СЕРВЕР:
-    //    - WireMock.NET - эмуляция HTTP сервера с настраиваемыми ответами
-    //    - MockHttp - легковесный эмулятор HTTP
-    //    - HttpMock - имитация HTTP запросов
-    // 
-    // 4. ВНУТРЕННИЙ HTTP-ХЭНДЛЕР (FakeHttpMessageHandler):
-    //    - Создание своего обработчика с предопределенными ответами
-    //    - Использование DelegatingHandler для перехвата запросов
-    // 
-    // Примеры использования см. в классе TestHelpers ниже
+public sealed class AsynchronousServerRequestAppTests {
+    [Test]
+    public void ExecuteRequests_WithWorkingEndpoints_ReturnsThreeResponses() {
+        var application = new AsynchronousServerRequestApp();
+
+        ServerConfigDto[] servers = {
+            new ServerConfigDto { Name = "Post",
+                                  Url = "https://jsonplaceholder.typicode.com/posts/4" },
+            new ServerConfigDto { Name = "User",
+                                  Url = "https://jsonplaceholder.typicode.com/users/2" },
+            new ServerConfigDto { Name = "Todo",
+                                  Url = "https://jsonplaceholder.typicode.com/todos/7" }
+        };
+
+        ExecutionResultDto<JsonElement> result = application.ExecuteRequests<JsonElement>(servers);
+
+        Assert.That(result.Version, Is.EqualTo("Asynchronous"));
+        Assert.That(result.SuccessfulRequests, Is.EqualTo(3));
+        Assert.That(result.FailedRequests, Is.EqualTo(0));
+        Assert.That(result.Responses.Count, Is.EqualTo(3));
+        Assert.That(result.TotalExecutionTime, Is.GreaterThan(TimeSpan.Zero));
+    }
+
+    [Test]
+    public void ExecuteRequests_WithOneBrokenEndpoint_CountsFailure() {
+        var application = new AsynchronousServerRequestApp();
+
+        ServerConfigDto[] servers = {
+            new ServerConfigDto { Name = "Post",
+                                  Url = "https://jsonplaceholder.typicode.com/posts/4" },
+            new ServerConfigDto {
+                Name = "Broken", Url = "https://jsonplaceholder.typicode.com/not-existing-resource"
+            },
+            new ServerConfigDto { Name = "Todo",
+                                  Url = "https://jsonplaceholder.typicode.com/todos/7" }
+        };
+
+        ExecutionResultDto<JsonElement> result = application.ExecuteRequests<JsonElement>(servers);
+
+        Assert.That(result.Version, Is.EqualTo("Asynchronous"));
+        Assert.That(result.SuccessfulRequests, Is.EqualTo(2));
+        Assert.That(result.FailedRequests, Is.EqualTo(1));
+        Assert.That(result.Responses.Count, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void ExecuteRequests_WhenServersAreMissing_ThrowsException() {
+        var application = new AsynchronousServerRequestApp();
+
+        Assert.Throws<ArgumentException>(
+            () => application.ExecuteRequests<JsonElement>(Array.Empty<ServerConfigDto>()));
+    }
 }
